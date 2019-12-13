@@ -8,9 +8,9 @@ def detect_face(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
  
     #加载OpenCV人脸检测分类器Haar   不能使用网上下载的文件，需要opencv自带的
-    face_cascade = cv2.CascadeClassifier('C:\Program Files\Anaconda3\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml')
+    face_cascade = cv2.CascadeClassifier('C:\Program Files\Anaconda3\Lib\site-packages\cv2\data\haarcascade_frontalface_alt.xml')
  
-    #检测多尺度图像，返回值是一张脸部区域信息的列表（x,y,宽,高）
+    #检测多尺度图像，返回值是一张脸部区域信息的列表（x,y,宽,高）  scaleFactor表示每次图像尺寸减小的比例,minNeighbors表示每一个目标至少要被检测到3次才算是真的目标
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5)
  
     # 如果未检测到面部，则返回原始图像
@@ -29,9 +29,10 @@ def detect_face(img):
 def draw_rectangle(img, rect):
     (x, y, w, h) = rect
     cv2.rectangle(img, (x, y), (x + w, y + h), (128, 128, 0), 2)
-# 根据给定的（x，y）坐标标识出人名
+
+# 根据给定的（x，y）坐标在图片上写文字
 def draw_text(img, text, x, y):
-    cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, (128, 128, 0), 2)
+    cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.5, (128, 128, 0), 1)
  
 # 此函数识别传递的图像中的人物并在检测到的脸部周围绘制一个矩形及其名称
 def predict(test_img):
@@ -59,7 +60,7 @@ def predict(test_img):
     return img
  
 #加载测试图像
-test_img1 = cv2.imread("test_data/test1.png")
+test_img1 = cv2.imread("test_data/test2.png")
  
 #执行预测
 predicted_img1 = predict(test_img1)

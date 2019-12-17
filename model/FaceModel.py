@@ -37,11 +37,12 @@ class FaceModel(object):
                                 acti=activiation)
         
         if self.net_type == NetType.VGG:
+            print('Choose the VGG model')
             model = vmodel.vgg(input_shape=input_shape,
                                 num_classes=7,
                                 drop_out=drop_out,
-                                bn=batch_normalization,
-                                acti=activiation)
+                                batch_normalization=batch_normalization,
+                                activation=activiation)
         elif net_type == NetType.GOOGLENET:
             #mdoel = gmodel.get_model(input_shape)
             pass

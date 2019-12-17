@@ -1,7 +1,7 @@
 import keras
 from keras.models import Model
 from keras.layers import Activation, Conv2D, Dense, BatchNormalization
-from keras.layers import Input, Flatten, AveragePooling2D
+from keras.layers import Input, Flatten, AveragePooling2D, MaxPooling2D
 from keras.optimizers import Adm
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -10,54 +10,10 @@ from keras.preprocessing.image import ImageDataGenerator
 # nb_epoch=100
 # batch_size=32
 
-#Default 7 types of facial expression
-def vgg(input_shape, num_classes=7, drop_out, batch_normalization, activation):
-    inputs = Input(shape=input_shape)
-    x = resnet_layer(inputs=inputs)
-    # Instantiate the stack of residual units
-    for stack in range(3):
-        for res_block in range(num_res_blocks):
-            strides = 1
-            if stack > 0 and res_block == 0:  # first layer but not first stack
-                strides = 2  # downsample
-            y = resnet_layer(inputs=x,
-                             num_filters=num_filters,
-                             strides=strides)
-            y = resnet_layer(inputs=y,
-                             num_filters=num_filters,
-                             activation=None)
-            if stack > 0 and res_block == 0:  # first layer but not first stack
-                # linear projection residual shortcut connection to match
-                # changed dims
-                x = resnet_layer(inputs=x,
-                                 num_filters=num_filters,
-                                 kernel_size=1,
-                                 strides=strides,
-                                 activation=None,
-                                 batch_normalization=False)
-            x = keras.layers.add([x, y])
-            x = Activation('relu')(x)
-        num_filters *= 2
-
-    # Add classifier on top.
-    # v1 does not use BN after last shortcut connection-ReLU
-    x = AveragePooling2D(pool_size=8)(x)
-    y = Flatten()(x)
-    outputs = Dense(num_classes,
-                    activation='softmax',
-                    kernel_initializer='he_normal')(y)
-
-    # Instantiate model.
-    model = Model(inputs=inputs, outputs=outputs)
-    return model
-
-def vgg_layer(inputs,
-                 num_filters=16,
-                 kernel_size=3,
-                 strides=1,
-                 activation='relu',
-                 batch_normalization=True,
-                 conv_first=True):
+# VGG convolution block
+# 1 and 2th layer have 2 convs and 1 pooling
+# 3 -- 5 layer have 3 convs and 1 pooling
+def vgg_conv_block(inputs, kernel_size=3, num_filters, strides=1, activation='relu',batch_normalization=True, num_layer):
     """2D Convolution-Batch Normalization-Activation stack builder
     # Arguments
         inputs (tensor): input tensor from input image or previous layer
@@ -79,16 +35,85 @@ def vgg_layer(inputs,
                   kernel_regularizer=l2(1e-4))
 
     x = inputs
-    if conv_first:
+
+    conv_times = 3
+    if num_layer < 2:
+        conv_times = 2
+    
+    for num_conv in range(conv_times):
+        print('%dth executed convolution in %dth VGG layer' % num_conv, num_layer)
         x = conv(x)
         if batch_normalization:
             x = BatchNormalization()(x)
         if activation is not None:
             x = Activation(activation)(x)
-    else:
-        if batch_normalization:
-            x = BatchNormalization()(x)
-        if activation is not None:
-            x = Activation(activation)(x)
-        x = conv(x)
+
+    # Pooling
+    x = MaxPooling2D(pool_size=(2, 2))(x)
+
     return x
+
+def vgg_fully_conn_block(inputs, out_put_size, activation='relu',batch_normalization=True):
+    y = Dense(out_put_size,
+                activation=activation,
+                kernel_initializer='he_normal')(inputs)
+    
+    if batch_normalization:
+        y = BatchNormalization()y
+
+    return y
+
+#####################################################################
+# Default 7 types of facial expression
+# VGG 16 Weight layer
+# ---------------------------------------------------
+# |_____Layer_____|__Convovlution__|____Pooling____|____Output_____|
+# |_______1_______|_______2________|_______1_______|__112*112*128__|
+# |_______2_______|_______2________|_______1_______|___56*56*256___|
+# |_______3_______|_______3________|_______1_______|___28*28*512___|
+# |_______4_______|_______3________|_______1_______|___14*14*512___|
+# |_______5_______|_______3________|_______1_______|____7*7*512____|
+# |_______3_______|_______1________|_______1_______|___28*28*512___|
+# 
+# Fully conection layer in total 4
+# in total 2 layer of 4096 fully connection
+# 1 layer of 1000 fully connection
+# 1 layer of 7 soft-max
+####################################################################
+def vgg(input_shape, num_classes=7, drop_out, batch_normalization, activation):
+    inputs = Input(shape=input_shape)
+    x = inputs
+    # initiate the filter
+    num_filters = 64
+
+    for num_layer in range(5):
+        # double filters in previous 4 layer
+        if num_layer < 4:
+            num_filters *= 2
+        x = vgg_conv_block(x, 
+                    num_filters=num_filters,
+                    activation=activation,
+                    batch_normalization=batch_normalization,
+                    num_layer=num_layer)
+    
+    
+    # Fully connection layer
+    y = Flatten()(x)
+    out_put_size = 4096
+    for num_connection in range(3):
+        y = vgg_fully_conn_block(y, 
+                                out_put_size, 
+                                activation=activation,
+                                batch_normalization=batch_normalization)
+        
+        if num_connection == 1:
+            out_put_size = 1000
+    
+    # Outputs
+    outputs = Dense(num_classes,
+                    activation='softmax',
+                    kernel_initializer='he_normal')(y)
+
+    # Instantiate model.
+    model = Model(inputs=inputs, outputs=outputs)
+    return model

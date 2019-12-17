@@ -33,10 +33,10 @@ def lr_schedule(epoch):
 
 # Generate Optimizer automatically using for the optimizer analysis
 def get_optimizer(opm_name=OptimizerName.Adam, lr=0.9,decay=0):
-    opm = Adam(learning_rate=lr,decay)
+    opm = Adam(learning_rate=lr,decay=decay)
 
-    if opm_name = OptimizerName.RMSprop:
-        opm = RMSprop(learning_rate=lr, decay) 
+    if opm_name == OptimizerName.RMSprop:
+        opm = RMSprop(learning_rate=lr, decay=decay) 
    
     return opm
 
@@ -49,6 +49,6 @@ def get_saved_model_path(net_type):
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
     filepath = os.path.join(save_dir, model_name)
+    print('The saved modle path is %s' % filepath)
 
     return filepath
-

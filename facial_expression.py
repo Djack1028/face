@@ -7,6 +7,27 @@ import os
 from model import FaceModel
 import keras.metrics as metric
 
+#********************************************************************************************************************************************
+# Optimizer methdology
+#--------------------------------------------------------------------------------------------------------------------------------------
+# Optimizer Engine   | Data Augementation            | Dropout              | Batch Normalization               | Activation           |   
+#--------------------------------------------------------------------------------------------------------------------------------------
+# set opm_name       | set opm_data_augementation    | set opm_drop_out     | set opm_batch_normalization       | set Activation       |
+# opm_name = Adam    | opm_data_augementation = True | opm_drop_out = True  | opm_batch_normalization = True    | activiation = 'relu' |
+# opm_name = RMSprop |                               | drop_out_ratio = 0.4 |                                   |                      |
+#---------------------------------------------------------------------------------------------------------------------------------------
+# 
+# 3rd type of modle for the analysis/comparison
+# 1: VGG
+# 2: GoogleNet
+# 3: ResNet110
+#
+# Evaluation indexes
+# 1: Loss value
+# 2: Top 5 accuracy
+# 3: In total accuracy
+#*********************************************************************************************************************************************
+
 ################Hyper Parameters################
 # modle selection
 net_type = NetType.RESNET

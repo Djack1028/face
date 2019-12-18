@@ -5,6 +5,7 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.callbacks import ReduceLROnPlateau
 import os
 from model import FaceModel
+import keras.metrics as metric
 
 ################Hyper Parameters################
 # modle selection
@@ -28,6 +29,12 @@ epochs = 200
 # Activation
 activiation = 'relu'
 
+# Facial Expression class num
+num_facial_expression = 7
+
+# Drop out ratio
+drop_out_ratio = 0.4
+
 ################Prepare the Training Model##################
 # initiate 
 lr = utils.lr_schedule(lr_epoch)
@@ -49,13 +56,15 @@ x_test = x_test.astype('float32') / 255
 faceModel = FaceModel(net_type=net_type, 
                     input_shape=input_shape, 
                     drop_out=opm_drop_out, 
-                    batch_normalization=opm_drop_out,
-                    activiation=activiation)
+                    drop_out_ratio=drop_out_ratio
+                    batch_normalization=opm_batch_normalization,
+                    activiation=activiation,
+                    num_class=num_facial_expression)
 
 modle = faceModel.get_model_instance()
 model.compile(loss='categorical_crossentropy',
               optimizer=opm,
-              metrics=['accuracy'])
+              metrics=['accuracy',metric.top_k_categorical_accuracy])
 model.summary()
 print(model_type)
 
@@ -135,3 +144,4 @@ else:
 scores = model.evaluate(x_test, y_test, verbose=1)
 print('Test loss:', scores[0])
 print('Test accuracy:', scores[1])
+print('Top 5 accuracy:', scores[2])

@@ -1,9 +1,7 @@
 import keras
 from keras.models import Model
 from keras.layers import Activation, Conv2D, Dense, BatchNormalization
-from keras.layers import Input, Flatten, AveragePooling2D, MaxPooling2D
-from keras.optimizers import Adm
-from keras.preprocessing.image import ImageDataGenerator
+from keras.layers import Input, Flatten, MaxPooling2D
 
 ################用于正则化时权重降低的速度
 # weight_decay = 0.0005
@@ -41,7 +39,7 @@ def vgg_conv_block(inputs, kernel_size=3, num_filters, strides=1, activation='re
         conv_times = 2
     
     for num_conv in range(conv_times):
-        print('%dth executed convolution in %dth VGG layer' % num_conv, num_layer)
+        print('%dth executed convolution in %dth VGG layer' % num_conv+1, num_layer+1)
         x = conv(x)
         if batch_normalization:
             x = BatchNormalization()(x)
@@ -50,16 +48,23 @@ def vgg_conv_block(inputs, kernel_size=3, num_filters, strides=1, activation='re
 
     # Pooling
     x = MaxPooling2D(pool_size=(2, 2))(x)
+    feature_map_dimension = 224/2**(num_layer+1)
+    print('The feature maps in the %dth conv layer is %d*%d*%d' % num_layer+1, num_filters, feature_map_dimension, feature_map_dimension)
 
     return x
 
-def vgg_fully_conn_block(inputs, out_put_size, activation='relu',batch_normalization=True):
+def vgg_fully_conn_block(inputs, out_put_size, activation='relu', drop_out, drop_out_ratio=0.4, batch_normalization=True):
     y = Dense(out_put_size,
                 activation=activation,
                 kernel_initializer='he_normal')(inputs)
     
     if batch_normalization:
         y = BatchNormalization()y
+    
+    
+    # Add the Dropout
+    if drop_out:
+        y = Dropout(drop_out_ratio)(y)
 
     return y
 
@@ -79,15 +84,19 @@ def vgg_fully_conn_block(inputs, out_put_size, activation='relu',batch_normaliza
 # in total 2 layer of 4096 fully connection
 # 1 layer of 1000 fully connection
 # 1 layer of 7 soft-max
+#
+# Only drop out in the Fully connection layer
 ####################################################################
-def vgg(input_shape, num_classes=7, drop_out, batch_normalization, activation):
+def vgg(input_shape, num_classes=7, drop_out, drop_out_ratio=0.4,batch_normalization, activation):
     inputs = Input(shape=input_shape)
     x = inputs
     # initiate the filter
     num_filters = 64
 
+    # Convolution layer
+    # can add drop out later
     for num_layer in range(5):
-        # double filters in previous 4 layer
+        # double filters for each layer in previous 4 layer
         if num_layer < 4:
             num_filters *= 2
         x = vgg_conv_block(x, 
@@ -99,14 +108,18 @@ def vgg(input_shape, num_classes=7, drop_out, batch_normalization, activation):
     
     # Fully connection layer
     y = Flatten()(x)
+    # default set as 4096 
     out_put_size = 4096
     for num_connection in range(3):
         y = vgg_fully_conn_block(y, 
                                 out_put_size, 
                                 activation=activation,
-                                batch_normalization=batch_normalization)
+                                batch_normalization=batch_normalization,
+                                drop_out=drop_out,
+                                drop_out_ratio=drop_out_ratio)
         
         if num_connection == 1:
+            # out put set as 1000 in 3rd fully connection 
             out_put_size = 1000
     
     # Outputs

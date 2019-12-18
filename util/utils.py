@@ -1,4 +1,4 @@
-from facial_expression_constants import NetType,OptimizerName
+from util.facial_expression_constants import NetType,OptimizerName
 from keras.optimizers import Adam, RMSprop
 
 def get_model_name(net_type):
